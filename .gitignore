@@ -1,0 +1,18 @@
+# Environment
+.env
+
+# Build
+dist
+
+# Installation
+node_modules
+yarn.lock
+package-lock.json
+
+# Ignore all files within input folder
+src/input/**
+!src/input/.gitkeep
+
+# Ignore all files within output folder
+src/output/**
+!src/output/.gitkeep
