@@ -2,7 +2,24 @@ import "dotenv/config"
 import fs from "fs"
 import path from "path"
 
-type Versions = Record<string, string>
+type Versions = Record<string, string | Record<string, string>>
+type PackageJson = {
+  dependencies: Record<string, string>
+  devDependencies: Record<string, string>
+  peerDependencies: Record<string, string>
+  optionalDependencies: Record<string, string>
+}
+type PackageLockDependency = {
+  version: string
+  resolved: string
+  integrity: string
+  dev: boolean
+  requires: Record<string, string>
+  dependencies: Record<string, PackageLockDependency>
+}
+type PackageLock = {
+  dependencies: Record<string, PackageLockDependency>
+}
 
 const RELATIVE_PATH_TO_ROOT_FOLDER =
   process.env.RELATIVE_PATH_TO_ROOT_FOLDER || ""
@@ -53,6 +70,82 @@ const main = async () => {
             versions[packageName] = packageVersion
           }
         }
+
+        break
+      }
+      case "package-lock.json": {
+        const packageJsonFile = files.find((file) => file === "package.json")
+        const packageJsonContent = fs.readFileSync(
+          `${inputFolder}/${packageJsonFile}`,
+          "utf-8"
+        )
+        const packageJson = JSON.parse(packageJsonContent) as PackageJson
+        const packageLock = JSON.parse(content) as PackageLock
+
+        const dependencies = Object.entries(
+          packageJson.dependencies ?? {}
+        ).reduce<string[]>((acc, [packageName, version]) => {
+          acc.push(packageName)
+          return acc
+        }, [])
+
+        const devDependencies = Object.entries(
+          packageJson.devDependencies ?? {}
+        ).reduce<string[]>((acc, [packageName, version]) => {
+          acc.push(packageName)
+          return acc
+        }, [])
+
+        const peerDependencies = Object.entries(
+          packageJson.peerDependencies ?? {}
+        ).reduce<string[]>((acc, [packageName, version]) => {
+          acc.push(packageName)
+          return acc
+        }, [])
+
+        const optionalDependencies = Object.entries(
+          packageJson.optionalDependencies ?? {}
+        ).reduce<string[]>((acc, [packageName, version]) => {
+          acc.push(packageName)
+          return acc
+        }, [])
+
+        const packageLockDependencies = Object.entries(
+          packageLock.dependencies ?? {}
+        ).reduce(
+          (acc, [packageName, details]) => {
+            if (dependencies.includes(packageName)) {
+              acc.dependencies[packageName] = details.version
+            }
+
+            if (devDependencies.includes(packageName)) {
+              acc.devDependencies[packageName] = details.version
+            }
+
+            if (peerDependencies.includes(packageName)) {
+              acc.peerDependencies[packageName] = details.version
+            }
+
+            if (optionalDependencies.includes(packageName)) {
+              acc.optionalDependencies[packageName] = details.version
+            }
+
+            return acc
+          },
+          {
+            dependencies: {},
+            devDependencies: {},
+            peerDependencies: {},
+            optionalDependencies: {},
+          } as Record<keyof PackageJson, Record<string, string>>
+        )
+
+        versions["dependencies"] = packageLockDependencies.dependencies
+        versions["devDependencies"] = packageLockDependencies.devDependencies
+        versions["peerDependencies"] = packageLockDependencies.peerDependencies
+        versions["optionalDependencies"] =
+          packageLockDependencies.optionalDependencies
+        break
       }
       default:
         // TODO: package-lock.json, pnpm-lock.yaml
