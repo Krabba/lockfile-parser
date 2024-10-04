@@ -6,7 +6,7 @@ Supported lockfiles:
 
 - ✅ **yarn.lock**
 - ❌ **pnpm-lock.yaml** _(work in progress)_
-- ❌ **package-lock.json** _(work in progress)_
+- ✅ **package-lock.json** (must provide package.json)
 
 ## Installation / Setting up
 
